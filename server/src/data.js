@@ -1,6 +1,6 @@
-import bcrypt from "bcryptjs";
-
-const passwordHash = bcrypt.hashSync("demo1234", 10);
+// Pre-generated bcrypt hash for the classroom-only password "demo1234".
+// A real application stores a different hash for every user in a database.
+const passwordHash = "$2b$10$zNzxXdpoEVZUqsVug3d50e4erjF2O9L.gkHYPT/8T4KqcxXlYKZTy";
 
 export const users = [
   { id: 1, name: "Oona Omistaja", email: "owner@cinema.test", role: "owner", passwordHash },

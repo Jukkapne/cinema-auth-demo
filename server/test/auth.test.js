@@ -31,7 +31,32 @@ test("guest checkout creates an anonymous session without authenticating the gue
     guestEmail: "guest@example.com"
   }).expect(201);
   assert.equal(purchase.body.userId, null);
-  assert.ok(purchase.body.guestId);
+  assert.equal(purchase.body.checkoutType, "guest");
+  assert.equal("guestId" in purchase.body, false);
+  assert.match(purchase.headers["set-cookie"][0], /HttpOnly/);
+  assert.match(purchase.headers["set-cookie"][0], /SameSite=Lax/);
   const auth = await agent.get("/api/auth/me").expect(200);
   assert.equal(auth.body.user, null);
+});
+
+test("login failure uses one generic error message", async () => {
+  const response = await request(app).post("/api/auth/login").send({
+    email: "customer@cinema.test",
+    password: "wrong-password"
+  }).expect(401);
+  assert.equal(response.body.message, "Incorrect email or password.");
+});
+
+test("cashier can access sales but cannot access the owner report", async () => {
+  const agent = request.agent(app);
+  await agent.post("/api/auth/login").send({ email: "cashier@cinema.test", password: "demo1234" }).expect(200);
+  await agent.get("/api/cashier/sales").expect(200);
+  await agent.get("/api/owner/report").expect(403);
+});
+
+test("logout invalidates the authenticated session", async () => {
+  const agent = request.agent(app);
+  await agent.post("/api/auth/login").send({ email: "customer@cinema.test", password: "demo1234" }).expect(200);
+  await agent.post("/api/auth/logout").expect(204);
+  await agent.get("/api/my-purchases").expect(401);
 });

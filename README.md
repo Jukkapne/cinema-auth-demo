@@ -81,11 +81,23 @@ Students may choose JWT for their own project, but they must explain token stora
 
 ## Teaching materials
 
+- [`materials/ready-to-use/`](materials/ready-to-use/) — PowerPoint lecture and formatted Word documents for classroom use
 - [`materials/LECTURE.md`](materials/LECTURE.md) — slide-ready lecture outline
 - [`materials/TEACHER_NOTES.md`](materials/TEACHER_NOTES.md) — timing, explanations, and questions
 - [`materials/LIVE_CODING.md`](materials/LIVE_CODING.md) — step-by-step demonstration
+- [`materials/DEMO_RUNBOOK_FI.md`](materials/DEMO_RUNBOOK_FI.md) — Finnish action and speaking script for the live demo
 - [`materials/EXERCISES.md`](materials/EXERCISES.md) — student exercises and answer guide
 - [`materials/SECURITY_CHECKLIST.md`](materials/SECURITY_CHECKLIST.md) — project review checklist
+
+The ready-to-use folder contains:
+
+- `Authentication_and_Authorization_Lecture.pptx` — 21-slide PowerPoint deck
+- `Teacher_Preparation_Guide_FI.docx` — Finnish teacher preparation guide
+- `Teacher_Notes_EN.docx` — English teacher notes
+- `Live_Coding_Guide_EN.docx` — English demonstration runbook
+- `Exercises_and_Answer_Guide_EN.docx` — exercises and model answers
+- `Security_Checklist_EN.docx` — printable project checklist
+- `Demon_suoritusohje_FI.docx` — Finnish step-by-step demo script for the teacher
 
 ## Project structure
 

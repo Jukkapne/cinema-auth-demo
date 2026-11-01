@@ -13,6 +13,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [screenings, setScreenings] = useState([]);
   const [email, setEmail] = useState("customer@cinema.test");
+  const [password, setPassword] = useState("demo1234");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -26,17 +27,19 @@ function App() {
     try {
       const result = await api("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password: "demo1234" })
+        body: JSON.stringify({ email, password })
       });
       setUser(result.user);
       setMessage(`Welcome, ${result.user.name}!`);
-    } catch (error) { setMessage(error.message); }
+    } catch (error) { setMessage(`${error.status ?? "Error"} — ${error.message}`); }
   }
 
   async function logout() {
-    await api("/api/auth/logout", { method: "POST" });
-    setUser(null);
-    setMessage("You signed out.");
+    try {
+      await api("/api/auth/logout", { method: "POST" });
+      setUser(null);
+      setMessage("204 — You signed out and the server session was destroyed.");
+    } catch (error) { setMessage(`${error.status ?? "Error"} — ${error.message}`); }
   }
 
   async function buy(screeningId) {
@@ -46,12 +49,12 @@ function App() {
         body: JSON.stringify({ screeningId, seats: ["C7"], guestEmail: "guest@example.com" })
       });
       setMessage(`Booking ${result.id.slice(0, 8)} was created ${user ? "for your account" : "as a guest purchase"}.`);
-    } catch (error) { setMessage(error.message); }
+    } catch (error) { setMessage(`${error.status ?? "Error"} — ${error.message}`); }
   }
 
   async function tryProtected(path) {
-    try { setMessage(JSON.stringify(await api(path))); }
-    catch (error) { setMessage(error.message); }
+    try { setMessage(`200 — ${JSON.stringify(await api(path))}`); }
+    catch (error) { setMessage(`${error.status ?? "Error"} — ${error.message}`); }
   }
 
   return <main>
@@ -62,10 +65,15 @@ function App() {
     {message && <div className="message" role="status">{message}</div>}
     {!user && <section className="panel login">
       <div><h2>Sign in or continue as a guest</h2><p>Every demo account uses <code>demo1234</code>.</p></div>
-      <form onSubmit={login}><label>Email<select value={email} onChange={(event) => setEmail(event.target.value)}>{demoAccounts.map(([label, value]) => <option key={value} value={value}>{label}: {value}</option>)}</select></label><button type="submit">Sign in</button></form>
+      <form onSubmit={login}>
+        <label>Email<select value={email} onChange={(event) => setEmail(event.target.value)}>{demoAccounts.map(([label, value]) => <option key={value} value={value}>{label}: {value}</option>)}</select></label>
+        <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
+        <button type="submit">Sign in</button>
+      </form>
     </section>}
     <section><h2>Screenings</h2><div className="grid">{screenings.map((show) => <article key={show.id} className="card"><span>Auditorium {show.auditorium}</span><h3>{show.movie}</h3><p>{new Date(show.startsAt).toLocaleString("en-GB")}</p><p>{show.availableSeats} seats available</p><button onClick={() => buy(show.id)}>Book seat C7 {user ? "to my account" : "as a guest"}</button></article>)}</div></section>
-    <section className="panel"><h2>Try authorization</h2><p>Hiding a button does not protect an API. The server checks permission on every request.</p><div className="actions"><button onClick={() => tryProtected("/api/my-purchases")}>My purchases</button><button onClick={() => tryProtected("/api/cashier/sales")}>Cashier sales</button><button onClick={() => tryProtected("/api/owner/report")}>Owner report</button></div></section>
+    <section className="panel"><h2>Your role-aware workspace</h2><p>This is normal application navigation. React shows only controls relevant to the current role.</p>{!user ? <p>Sign in to see account tools.</p> : <div className="actions"><button onClick={() => tryProtected("/api/my-purchases")}>My purchases</button>{["cashier", "owner"].includes(user.role) && <button onClick={() => tryProtected("/api/cashier/sales")}>Cashier sales</button>}{user.role === "owner" && <button onClick={() => tryProtected("/api/owner/report")}>Owner report</button>}</div>}</section>
+    <section className="panel lab"><span className="eyebrow">TEACHING LAB</span><h2>Call protected APIs directly</h2><p>These buttons intentionally ignore UI visibility. They demonstrate that the server—not React—must return <code>401</code>, <code>403</code>, or <code>200</code>.</p><div className="actions"><button onClick={() => tryProtected("/api/my-purchases")}>GET /api/my-purchases</button><button onClick={() => tryProtected("/api/cashier/sales")}>GET /api/cashier/sales</button><button onClick={() => tryProtected("/api/owner/report")}>GET /api/owner/report</button></div></section>
   </main>;
 }
 

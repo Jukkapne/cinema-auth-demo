@@ -144,7 +144,7 @@ JWT can be useful for mobile clients, external API consumers, identity protocols
 For one React browser client and one Express backend:
 
 - a server session is easier to revoke
-- current roles remain on the server
+- role and session invalidation remain under server control
 - guest and signed-in flows share one model
 - no bearer credential needs to be exposed to React
 - fewer moving parts make authorization easier to see

@@ -12,6 +12,11 @@ import { publicUser, purchases, screenings, users } from "./data.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.resolve(__dirname, "../../client/dist");
 
+function publicPurchase(purchase) {
+  const { guestId: _guestId, ...safePurchase } = purchase;
+  return { ...safePurchase, checkoutType: purchase.userId ? "account" : "guest" };
+}
+
 export function createApp({ sessionSecret = "development-only-secret-change-me", production = false } = {}) {
   const app = express();
   if (production) app.set("trust proxy", 1);
@@ -67,7 +72,7 @@ export function createApp({ sessionSecret = "development-only-secret-change-me",
   });
 
   app.get("/api/my-purchases", requireAuthentication, (req, res) => {
-    res.json(purchases.filter((purchase) => purchase.userId === req.session.user.id));
+    res.json(purchases.filter((purchase) => purchase.userId === req.session.user.id).map(publicPurchase));
   });
 
   app.post("/api/purchases", (req, res) => {
@@ -77,9 +82,11 @@ export function createApp({ sessionSecret = "development-only-secret-change-me",
       return res.status(400).json({ message: "Choose a screening and at least one seat." });
     }
 
-    if (!req.session.user && !req.session.guestId) {
-      req.session.guestId = crypto.randomUUID();
+    const guestEmail = req.session.user ? null : String(req.body.guestEmail ?? "").trim().toLowerCase();
+    if (!req.session.user && !/^\S+@\S+\.\S+$/.test(guestEmail)) {
+      return res.status(400).json({ message: "Enter a valid email address for guest checkout." });
     }
+    if (!req.session.user && !req.session.guestId) req.session.guestId = crypto.randomUUID();
 
     const purchase = {
       id: crypto.randomUUID(),
@@ -87,18 +94,15 @@ export function createApp({ sessionSecret = "development-only-secret-change-me",
       seats,
       userId: req.session.user?.id ?? null,
       guestId: req.session.user ? null : req.session.guestId,
-      guestEmail: req.session.user ? null : String(req.body.guestEmail ?? "").trim().toLowerCase(),
+      guestEmail,
       status: "demo-payment-pending"
     };
-    if (!purchase.userId && !purchase.guestEmail) {
-      return res.status(400).json({ message: "An email address is required for guest checkout." });
-    }
     purchases.push(purchase);
-    res.status(201).json(purchase);
+    res.status(201).json(publicPurchase(purchase));
   });
 
   app.get("/api/cashier/sales", requireRole("cashier", "owner"), (_req, res) => {
-    res.json({ salesCount: purchases.length, purchases });
+    res.json({ salesCount: purchases.length, purchases: purchases.map(publicPurchase) });
   });
 
   app.get("/api/owner/report", requireRole("owner"), (_req, res) => {

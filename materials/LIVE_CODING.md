@@ -1,6 +1,6 @@
 # Live-coding guide
 
-The repository is the finished state. To create suspense, begin from a prepared branch or temporarily comment out the middleware on the protected routes. Do not type visual styling during class.
+The repository is the finished state. Ask students to predict each result before revealing the relevant middleware. Do not disable security controls or type visual styling during class.
 
 ## Part 1 — Establish the two checkout paths (5 minutes)
 
@@ -28,20 +28,21 @@ In browser storage tools, find `cinema-session`. Show that its value is not visi
 
 Open the React `useEffect` and `GET /api/auth/me`. Refresh the page. Explain that React state disappears, while the browser cookie allows Express to recognize the session. React receives a public user object, not the credential.
 
-## Part 4 — Demonstrate the broken version (5 minutes)
+## Part 4 — Prove that UI visibility is not authorization (5 minutes)
 
-Temporarily remove `requireRole("owner")` from `/api/owner/report`, or show a prepared commit without it.
+Do not remove security middleware during the lecture. The finished UI contains two intentionally different sections:
 
 1. Sign in as the customer.
-2. Hide the owner button in React based on the role.
-3. Call `/api/owner/report` using the Network panel, an API client, or the temporarily visible demo button.
-4. Observe that the secret data is returned.
+2. In **Your role-aware workspace**, observe that Cashier sales and Owner report are hidden.
+3. In **Teaching lab**, click `GET /api/owner/report`. This panel intentionally ignores UI visibility.
+4. Observe `403 — You are not allowed to perform this action.`
+5. Open the Network panel and show that the request really reached Express.
 
-Teaching point: presentation logic is not a security boundary.
+Teaching point: React hiding the normal navigation improves usability; only the server's `requireRole("owner")` middleware protects the data. This safe demonstration does not require temporarily disabling security controls.
 
-## Part 5 — Add authentication middleware (5 minutes)
+## Part 5 — Inspect authentication middleware (5 minutes)
 
-Implement or reveal:
+Ask students what the check needs to do, then reveal:
 
 ```js
 export function requireAuthentication(req, res, next) {
@@ -52,11 +53,11 @@ export function requireAuthentication(req, res, next) {
 }
 ```
 
-Apply it to `/api/my-purchases`. Test signed out and signed in.
+Point out where it is applied to `/api/my-purchases`. Test signed out and signed in.
 
-## Part 6 — Add role middleware (8 minutes)
+## Part 6 — Inspect role middleware (8 minutes)
 
-Implement or reveal `requireRole(...allowedRoles)` and apply it:
+Ask students to predict the allowed roles, then reveal `requireRole(...allowedRoles)` and its use:
 
 ```js
 app.get("/api/cashier/sales", requireRole("cashier", "owner"), handler);
@@ -104,4 +105,4 @@ Run `npm test`. Point out that good authorization tests include denied cases, no
 
 ## Optional challenge demonstration
 
-In React, change the displayed role or force an owner button to appear. The server must still return `403`. This is a memorable final proof that the server owns authorization.
+Use React DevTools to change displayed state, or simply use the Teaching lab to call a route that normal navigation hides. The server must still return `403`. This is a memorable final proof that the server owns authorization.

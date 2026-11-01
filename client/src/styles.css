@@ -9,7 +9,7 @@ section { margin-top: 36px; }
 .panel, .card, .message { background: #fff; border: 1px solid #d8d2c7; border-radius: 14px; padding: 22px; box-shadow: 0 8px 24px #372f2410; }
 .login { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: end; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; } .card > span { color: #9b2c2c; font-weight: 700; }
-button, select { font: inherit; border-radius: 8px; padding: 10px 14px; } button { border: 0; background: #9b2c2c; color: white; font-weight: 700; cursor: pointer; } button:hover { background: #7f1d1d; }
+button, select, input { font: inherit; border-radius: 8px; padding: 10px 14px; } select, input { border: 1px solid #aaa297; background: white; } button { border: 0; background: #9b2c2c; color: white; font-weight: 700; cursor: pointer; } button:hover { background: #7f1d1d; }
 label { display: grid; gap: 6px; font-weight: 700; } form, .actions { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
-.message { margin-top: 18px; border-left: 5px solid #9b2c2c; word-break: break-word; } code { background: #eee9df; padding: 2px 5px; border-radius: 4px; }
+.message { margin-top: 18px; border-left: 5px solid #9b2c2c; word-break: break-word; } .lab { border: 2px dashed #9b2c2c; } code { background: #eee9df; padding: 2px 5px; border-radius: 4px; }
 @media (max-width: 650px) { .login { grid-template-columns: 1fr; } header { align-items: flex-start; } .identity { flex-direction: column; align-items: flex-end; } }
