@@ -1,0 +1,118 @@
+import crypto from "node:crypto";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import bcrypt from "bcryptjs";
+import express from "express";
+import rateLimit from "express-rate-limit";
+import session from "express-session";
+import helmet from "helmet";
+import { requireAuthentication, requireRole } from "./auth.js";
+import { publicUser, purchases, screenings, users } from "./data.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const clientDist = path.resolve(__dirname, "../../client/dist");
+
+export function createApp({ sessionSecret = "development-only-secret-change-me", production = false } = {}) {
+  const app = express();
+  if (production) app.set("trust proxy", 1);
+
+  app.use(helmet({ contentSecurityPolicy: production ? undefined : false }));
+  app.use(express.json());
+  app.use(session({
+    name: production ? "__Host-cinema-session" : "cinema-session",
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: production,
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 4,
+      path: "/"
+    }
+    // The demo uses the default MemoryStore. Use Redis or a database-backed store in production.
+  }));
+
+  app.get("/api/screenings", (_req, res) => res.json(screenings));
+
+  const loginLimiter = rateLimit({ windowMs: 60_000, limit: 10, standardHeaders: true, legacyHeaders: false });
+  app.post("/api/auth/login", loginLimiter, async (req, res, next) => {
+    try {
+      const email = String(req.body.email ?? "").trim().toLowerCase();
+      const password = String(req.body.password ?? "");
+      const user = users.find((candidate) => candidate.email === email);
+      const passwordMatches = user && await bcrypt.compare(password, user.passwordHash);
+      if (!passwordMatches) return res.status(401).json({ message: "Incorrect email or password." });
+
+      req.session.regenerate((error) => {
+        if (error) return next(error);
+        req.session.user = publicUser(user);
+        res.json({ user: req.session.user });
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/auth/me", (req, res) => {
+    res.json({ user: req.session.user ?? null });
+  });
+
+  app.post("/api/auth/logout", (req, res, next) => {
+    req.session.destroy((error) => {
+      if (error) return next(error);
+      res.clearCookie(production ? "__Host-cinema-session" : "cinema-session", { path: "/" });
+      res.status(204).end();
+    });
+  });
+
+  app.get("/api/my-purchases", requireAuthentication, (req, res) => {
+    res.json(purchases.filter((purchase) => purchase.userId === req.session.user.id));
+  });
+
+  app.post("/api/purchases", (req, res) => {
+    const screening = screenings.find((item) => item.id === Number(req.body.screeningId));
+    const seats = Array.isArray(req.body.seats) ? req.body.seats.map(String) : [];
+    if (!screening || seats.length === 0) {
+      return res.status(400).json({ message: "Choose a screening and at least one seat." });
+    }
+
+    if (!req.session.user && !req.session.guestId) {
+      req.session.guestId = crypto.randomUUID();
+    }
+
+    const purchase = {
+      id: crypto.randomUUID(),
+      screeningId: screening.id,
+      seats,
+      userId: req.session.user?.id ?? null,
+      guestId: req.session.user ? null : req.session.guestId,
+      guestEmail: req.session.user ? null : String(req.body.guestEmail ?? "").trim().toLowerCase(),
+      status: "demo-payment-pending"
+    };
+    if (!purchase.userId && !purchase.guestEmail) {
+      return res.status(400).json({ message: "An email address is required for guest checkout." });
+    }
+    purchases.push(purchase);
+    res.status(201).json(purchase);
+  });
+
+  app.get("/api/cashier/sales", requireRole("cashier", "owner"), (_req, res) => {
+    res.json({ salesCount: purchases.length, purchases });
+  });
+
+  app.get("/api/owner/report", requireRole("owner"), (_req, res) => {
+    res.json({ title: "Owner report", ticketsSold: purchases.reduce((sum, item) => sum + item.seats.length, 0) });
+  });
+
+  if (production) {
+    app.use(express.static(clientDist));
+    app.get("/{*splat}", (_req, res) => res.sendFile(path.join(clientDist, "index.html")));
+  }
+
+  app.use((error, _req, res, _next) => {
+    console.error(error);
+    res.status(500).json({ message: "An unexpected server error occurred." });
+  });
+  return app;
+}
