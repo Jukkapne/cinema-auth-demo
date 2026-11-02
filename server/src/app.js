@@ -22,6 +22,7 @@ export function createApp({ sessionSecret = "development-only-secret-change-me",
   if (production) app.set("trust proxy", 1);
 
   app.use(helmet({ contentSecurityPolicy: production ? undefined : false }));
+
   app.use(express.json());
   app.use(session({
     name: production ? "__Host-cinema-session" : "cinema-session",
@@ -41,6 +42,7 @@ export function createApp({ sessionSecret = "development-only-secret-change-me",
   app.get("/api/screenings", (_req, res) => res.json(screenings));
 
   const loginLimiter = rateLimit({ windowMs: 60_000, limit: 10, standardHeaders: true, legacyHeaders: false });
+
   app.post("/api/auth/login", loginLimiter, async (req, res, next) => {
     try {
       const email = String(req.body.email ?? "").trim().toLowerCase();

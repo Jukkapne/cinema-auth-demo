@@ -19,3 +19,13 @@ export function publicUser(user) {
   const { passwordHash: _passwordHash, ...safeUser } = user;
   return safeUser;
 }
+
+export function publicUser2(user) {
+
+  const safeUser = { ...user };
+  
+
+  delete safeUser.passwordHash;
+
+  return safeUser;
+}
