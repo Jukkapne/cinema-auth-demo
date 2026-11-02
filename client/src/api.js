@@ -8,6 +8,7 @@ export class ApiError extends Error {
 
 export async function api(path, options = {}) {
   const response = await fetch(path, {
+    // STEP 7 — The browser sends matching same-origin cookies; JS does not read HttpOnly values.
     credentials: "same-origin",
     headers: { "Content-Type": "application/json", ...options.headers },
     ...options

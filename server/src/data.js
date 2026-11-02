@@ -16,6 +16,7 @@ export const screenings = [
 export const purchases = [];
 
 export function publicUser(user) {
+  // STEP 5 — Remove the password hash before placing the user in the session or response.
   const { passwordHash: _passwordHash, ...safeUser } = user;
   return safeUser;
 }

@@ -25,10 +25,12 @@ function App() {
   async function login(event) {
     event.preventDefault();
     try {
+      // STEP 1 — Send the entered credentials to Express in the request body.
       const result = await api("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password })
       });
+      // STEP 5 — React receives the public user, never the HttpOnly cookie value.
       setUser(result.user);
       setMessage(`Welcome, ${result.user.name}!`);
     } catch (error) { setMessage(`${error.status ?? "Error"} — ${error.message}`); }
@@ -44,10 +46,13 @@ function App() {
 
   async function buy(screeningId) {
     try {
+      // STEP 6 — This demo selects a screening but hard-codes seat C7; it has no seat-picker UI.
+      // STEP 7 — Send the purchase request; the browser attaches the matching cookie itself.
       const result = await api("/api/purchases", {
         method: "POST",
         body: JSON.stringify({ screeningId, seats: ["C7"], guestEmail: "guest@example.com" })
       });
+      // STEP 10 — Show the server's purchase response in the interface.
       setMessage(`Booking ${result.id.slice(0, 8)} was created ${user ? "for your account" : "as a guest purchase"}.`);
     } catch (error) { setMessage(`${error.status ?? "Error"} — ${error.message}`); }
   }
